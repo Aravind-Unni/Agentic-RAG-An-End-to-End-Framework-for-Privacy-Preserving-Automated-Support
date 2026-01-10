@@ -84,7 +84,7 @@ FORMAT:
 * **Model Size (Llama 3.2):** We opted for the smaller 3B parameter model for speed and low memory usage, which sacrifices some reasoning capability compared to larger models like Llama 3 70B or GPT-4.
 * **MMR Search:** We used Maximal Marginal Relevance (MMR) over pure cosine similarity to increase diversity in retrieval, which slightly increases retrieval time but reduces redundancy.
 
-##🌐 Deployment & Web Interface
+## 🌐 Deployment & Web Interface
 PolicyGuard AI is now fully deployable as a web application, featuring a high-performance FastAPI backend and a responsive HTML/JS frontend.
 
 Backend (FastAPI)
