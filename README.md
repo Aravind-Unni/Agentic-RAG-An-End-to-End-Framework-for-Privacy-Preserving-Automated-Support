@@ -94,7 +94,7 @@ The core RAG logic has been wrapped in a RESTful API using **FastAPI**. This all
 * **Server:** Powered by **Uvicorn**, a lightning-fast ASGI server.
 
 ### **Frontend (Chat UI)**
-We have integrated a custom chat interface using the **HTML5 UP "Dimension" template**.
+i have integrated a custom chat interface using the **HTML5 UP "Dimension" template**.
 * **Features:** Starfield background animation, responsive modal window, and real-time "Thinking..." indicators.
 * **Tech:** Pure HTML/CSS/JavaScript (No heavy frontend frameworks like React or Angular required).
 
