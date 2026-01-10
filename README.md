@@ -89,3 +89,23 @@ With more time, the following upgrades would improve the system:
 1.  **Hybrid Search:** Implement a mix of Keyword Search (BM25) and Semantic Search to better handle specific terms like product names or exact fees.
 2.  **Reranking Step:** Add a Cross-Encoder (e.g., `BGE-Reranker`) to re-score the retrieved documents before sending them to the LLM.
 3.  **UI Frontend:** Build a simple Streamlit or Chainlit interface for easier user interaction.
+4.  
+
+
+
+🌐 Deployment & Web Interface
+PolicyGuard AI is now fully deployable as a web application, featuring a high-performance FastAPI backend and a responsive HTML/JS frontend.
+
+Backend (FastAPI)
+The core RAG logic has been wrapped in a RESTful API using FastAPI. This allows for asynchronous query processing and easy integration with other services.
+
+Engine: main.py serves as the entry point, while rag_engine.py handles the LLM chain initialization.
+
+Server: Powered by Uvicorn, a lightning-fast ASGI server.
+
+Frontend (Chat UI)
+We have integrated a custom chat interface using the HTML5 UP "Dimension" template.
+
+Features: Starfield background animation, responsive modal window, and real-time "Thinking..." indicators.
+
+Tech: Pure HTML/CSS/JavaScript (No heavy frontend frameworks like React or Angular required).
