@@ -85,18 +85,26 @@ FORMAT:
 * **MMR Search:** We used Maximal Marginal Relevance (MMR) over pure cosine similarity to increase diversity in retrieval, which slightly increases retrieval time but reduces redundancy.
 
 ## 🌐 Deployment & Web Interface
-PolicyGuard AI is now fully deployable as a web application, featuring a high-performance FastAPI backend and a responsive HTML/JS frontend.
 
-Backend (FastAPI)
-The core RAG logic has been wrapped in a RESTful API using FastAPI. This allows for asynchronous query processing and easy integration with other services.
+PolicyGuard AI is now fully deployable as a web application, featuring a high-performance **FastAPI backend** and a responsive **HTML/JS frontend**.
 
-Engine: main.py serves as the entry point, while rag_engine.py handles the LLM chain initialization.
+### **Backend (FastAPI)**
+The core RAG logic has been wrapped in a RESTful API using **FastAPI**. This allows for asynchronous query processing and easy integration with other services.
+* **Engine:** `main.py` serves as the entry point, while `rag_engine.py` handles the LLM chain initialization.
+* **Server:** Powered by **Uvicorn**, a lightning-fast ASGI server.
 
-Server: Powered by Uvicorn, a lightning-fast ASGI server.
+### **Frontend (Chat UI)**
+We have integrated a custom chat interface using the **HTML5 UP "Dimension" template**.
+* **Features:** Starfield background animation, responsive modal window, and real-time "Thinking..." indicators.
+* **Tech:** Pure HTML/CSS/JavaScript (No heavy frontend frameworks like React or Angular required).
 
-Frontend (Chat UI)
-We have integrated a custom chat interface using the HTML5 UP "Dimension" template.
+## ▶️ How to Run
 
-Features: Starfield background animation, responsive modal window, and real-time "Thinking..." indicators.
+### **1. Start the LLM Server**
+Ensure Ollama is running in the background to serve the Llama 3.2 model.
+```bash
+ollama serve
 
-Tech: Pure HTML/CSS/JavaScript (No heavy frontend frameworks like React or Angular required).
+cd src
+python -m uvicorn main:app --reload
+
