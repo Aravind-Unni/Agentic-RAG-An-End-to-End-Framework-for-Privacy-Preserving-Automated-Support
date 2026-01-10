@@ -1,0 +1,14 @@
+langchain
+langchain-community
+langchain-huggingface
+langchain-chroma
+langchain-classic
+langchain-ollama
+chromadb
+pypdf
+python-dotenv
+sentence-transformers
+matplotlib
+seaborn
+
+ 

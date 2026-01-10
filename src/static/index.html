@@ -1,0 +1,115 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Policy Assistant Chatbot</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <link rel="stylesheet" href="static/assets/css/main.css" />
+        <noscript><link rel="stylesheet" href="static/assets/css/noscript.css" /></noscript>
+    </head>
+    <body class="is-preload">
+
+        <div id="wrapper">
+
+                <header id="header">
+                        <div class="logo">
+                            <span class="icon fa-comments"></span>
+                        </div>
+                        <div class="content">
+                            <div class="inner">
+                                <h1>Policy Assistant</h1>
+                                <p>Ask any question about our company policies, returns, or refunds.</p>
+                                
+                                <div class="chat-wrapper">
+                                    <div id="chat-box" class="chat-box">
+                                        <div class="message bot-message">
+                                            Hello! I am your Policy Assistant. How can I help you today?
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="input-area">
+                                        <input type="text" id="user-input" placeholder="Type your question..." autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
+                                        <button onclick="sendMessage()" class="send-btn">Send</button>
+                                    </div>
+                                </div>
+                                </div>
+                        </div>
+                        <nav>
+                            <ul>
+                                <li><a href="javascript:location.reload()">Reset Chat</a></li>
+                            </ul>
+                        </nav>
+                    </header>
+
+                <div id="main">
+                    </div>
+
+                <footer id="footer">
+                        <p class="copyright">&copy; RAG Project. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+                    </footer>
+
+            </div>
+
+        <div id="bg"></div>
+
+        <script src="static/assets/js/jquery.min.js"></script>
+            <script src="static/assets/js/browser.min.js"></script>
+            <script src="static/assets/js/breakpoints.min.js"></script>
+            <script src="static/assets/js/util.js"></script>
+            <script src="static/assets/js/main.js"></script>
+
+        <script>
+                async function sendMessage() {
+                    const inputField = document.getElementById('user-input');
+                    const chatBox = document.getElementById('chat-box');
+                    const question = inputField.value.trim();
+
+                    if (!question) return;
+
+                    // 1. Add User Message
+                    addMessage(question, 'user-message');
+                    inputField.value = ''; 
+
+                    // 2. Show "Thinking..."
+                    const loadingId = addMessage('Thinking...', 'bot-message');
+
+                    try {
+                        // 3. Send to FastAPI
+                        const response = await fetch('/api/ask', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ query: question })
+                        });
+
+                        const data = await response.json();
+
+                        // 4. Remove "Thinking..." and show answer
+                        document.getElementById(loadingId).remove();
+                        
+                        if (response.ok) {
+                            addMessage(data.answer, 'bot-message');
+                        } else {
+                            addMessage("Error: " + data.detail, 'bot-message');
+                        }
+
+                    } catch (error) {
+                        document.getElementById(loadingId).remove();
+                        addMessage("Could not connect to the server.", 'bot-message');
+                        console.error(error);
+                    }
+                }
+
+                function addMessage(text, className) {
+                    const chatBox = document.getElementById('chat-box');
+                    const div = document.createElement('div');
+                    div.className = `message ${className}`;
+                    div.id = 'msg-' + Date.now();
+                    div.innerText = text;
+                    chatBox.appendChild(div);
+                    chatBox.scrollTop = chatBox.scrollHeight; 
+                    return div.id;
+                }
+            </script>
+
+    </body>
+</html>
