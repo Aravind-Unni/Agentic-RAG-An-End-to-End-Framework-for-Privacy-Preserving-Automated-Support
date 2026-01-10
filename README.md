@@ -84,16 +84,7 @@ FORMAT:
 * **Model Size (Llama 3.2):** We opted for the smaller 3B parameter model for speed and low memory usage, which sacrifices some reasoning capability compared to larger models like Llama 3 70B or GPT-4.
 * **MMR Search:** We used Maximal Marginal Relevance (MMR) over pure cosine similarity to increase diversity in retrieval, which slightly increases retrieval time but reduces redundancy.
 
-### Future Improvements
-With more time, the following upgrades would improve the system:
-1.  **Hybrid Search:** Implement a mix of Keyword Search (BM25) and Semantic Search to better handle specific terms like product names or exact fees.
-2.  **Reranking Step:** Add a Cross-Encoder (e.g., `BGE-Reranker`) to re-score the retrieved documents before sending them to the LLM.
-3.  **UI Frontend:** Build a simple Streamlit or Chainlit interface for easier user interaction.
-4.  
-
-
-
-🌐 Deployment & Web Interface
+##🌐 Deployment & Web Interface
 PolicyGuard AI is now fully deployable as a web application, featuring a high-performance FastAPI backend and a responsive HTML/JS frontend.
 
 Backend (FastAPI)
