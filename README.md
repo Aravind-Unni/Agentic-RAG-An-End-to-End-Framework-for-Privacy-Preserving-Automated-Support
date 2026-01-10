@@ -98,13 +98,4 @@ We have integrated a custom chat interface using the **HTML5 UP "Dimension" temp
 * **Features:** Starfield background animation, responsive modal window, and real-time "Thinking..." indicators.
 * **Tech:** Pure HTML/CSS/JavaScript (No heavy frontend frameworks like React or Angular required).
 
-## ▶️ How to Run
-
-### **1. Start the LLM Server**
-Ensure Ollama is running in the background to serve the Llama 3.2 model.
-```bash
-ollama serve
-
-cd src
-python -m uvicorn main:app --reload
 
