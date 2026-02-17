@@ -1,97 +1,107 @@
 import os
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
-# Keeping this import as per your request
-from langchain_classic.chains import RetrievalQA
+from dotenv import load_dotenv
+from langchain_classic.tools.retriever import create_retriever_tool
+from langchain_classic.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
+from langchain_community.tools.tavily_search import TavilySearchResults
+load_dotenv()
 
-# Configuration
-PERSIST_DIRECTORY = "./chroma_db"
+
+COLLECTION_NAME = "dynamic_policies"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 LLM_MODEL_NAME = "llama3.2"
 
-def initialize_rag_pipeline():
-    """
-    Loads the existing Vector DB and initializes the LLM Chain.
-    This runs ONCE when the server starts.
-    """
-    print("⏳ Loading Embedding Model...")
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 150
+
+def initialize_rag_pipeline(file_path):
+    print(f"📄 Loading PDF from {file_path}...")
+    loader = PyPDFLoader(file_path)
+    docs = loader.load()
+    
+    print(f"✂️ STEP 2: TEXT CHUNKING (Size: {CHUNK_SIZE}, Overlap: {CHUNK_OVERLAP})")
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+        length_function=len,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+    all_chunks = text_splitter.split_documents(docs)
+    
+    print("🧠 Initializing embedding model...")
     embedding_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL_NAME,
-        model_kwargs={'device': 'cpu'},
+        model_kwargs={'device': 'cpu'}, 
         encode_kwargs={'normalize_embeddings': True}
     )
 
-    print(f"⏳ Loading Vector Store from {PERSIST_DIRECTORY}...")
-    if not os.path.exists(PERSIST_DIRECTORY):
-        raise FileNotFoundError(f"Chroma DB not found at {PERSIST_DIRECTORY}. Please run the ingestion notebook first.")
-
-    vector_store = Chroma(
-        persist_directory=PERSIST_DIRECTORY,
-        embedding_function=embedding_model,
-        collection_name="company_policies"
+    print("💾 Creating new Chroma vector store in memory...")
+    vector_store = Chroma.from_documents(
+        documents=all_chunks,
+        embedding=embedding_model,
+        collection_name=COLLECTION_NAME 
     )
 
     retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
-    print(f"⏳ Connecting to Ollama ({LLM_MODEL_NAME})...")
-    llm = ChatOllama(
-        model=LLM_MODEL_NAME,
-        temperature=0.1,
-        num_predict=512
-    )
+    print(f"🤖 Connecting to Ollama ({LLM_MODEL_NAME})...")
+    llm = ChatOllama(model=LLM_MODEL_NAME, temperature=0.2, num_predict=512)
 
-    # Define the Prompt
-    prompt_template = """You are a Policy Assistant. Answer based ONLY on the provided context.
-
-    CONTEXT:
-    {context}
-
-    QUESTION:
-    {question}
-
-    ANSWER:"""
+    print("🛠️ Setting up Agent Tools...")
     
-    PROMPT = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context", "question"]
-    )
-
-    # --- FIX IS HERE ---
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        chain_type_kwargs={"prompt": PROMPT},
-        return_source_documents=True  # <--- Added this so sources are returned
+    # Tool 1: The Local PDF Retriever
+    policy_tool = create_retriever_tool(
+        retriever,
+        name="search_policy_document",
+        description="Searches the uploaded document. Use this FIRST to find company rules, refund policies, numbers, or facts."
     )
     
-    print("✅ RAG Pipeline Ready.")
-    return qa_chain
+    # Tool 2: Tavily Web Search
+    tavily_tool = TavilySearchResults(
+        max_results=3,
+        name="web_search",
+        description="Use this tool to search the internet for current events, real-world facts, or information NOT found in the policy document."
+    )
+    
+    # Give the agent access to both tools!
+    tools = [policy_tool, tavily_tool]
 
-if __name__ == "__main__":
-    print("\n🔬 STARTING TEST MODE...")
-    try:
-        # 1. Initialize the chain
-        chain = initialize_rag_pipeline()
-        
-        # 2. Ask a test question
-        test_question = "What is the return policy?"
-        print(f"\n❓ Asking: {test_question}")
-        
-        # 3. Invoke the chain
-        response = chain.invoke({"query": test_question})
-        
-        print("\n✅ ANSWER GENERATED:")
-        print("-" * 40)
-        print(response['result'])
-        print("-" * 40)
-        
-        print("\n📄 SOURCES:")
-        # This will now work because we added return_source_documents=True
-        for doc in response.get('source_documents', []):
-            print(f"- {doc.metadata.get('source', 'Unknown')}")
-            
-    except Exception as e:
-        print(f"\n❌ TEST FAILED: {e}")
+    react_prompt = """Answer the following questions as best you can. You have access to the following tools:
+
+{tools}
+
+Use the following format strictly:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}"""
+
+    prompt = PromptTemplate.from_template(react_prompt)
+
+    print("🧠 Initializing ReAct Agent...")
+    agent = create_react_agent(llm, tools, prompt)
+    
+    agent_executor = AgentExecutor(
+        agent=agent, 
+        tools=tools, 
+        verbose=True, 
+        handle_parsing_errors=True
+    )
+    
+    print("🚀 Multi-Tool Agentic RAG Ready.")
+    return agent_executor

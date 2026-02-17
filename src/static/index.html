@@ -1,115 +1,197 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title>Policy Assistant Chatbot</title>
+        <title>Document Q&A Chatbot</title>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
         <link rel="stylesheet" href="static/assets/css/main.css" />
         <noscript><link rel="stylesheet" href="static/assets/css/noscript.css" /></noscript>
+        <style>
+            /* Upload section styling */
+            .upload-section {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+            }
+            #upload-status {
+                margin-top: 10px;
+                font-size: 0.9em;
+                font-weight: bold;
+            }
+            /* Class to hide elements cleanly */
+            .hidden {
+                display: none !important;
+            }
+        </style>
     </head>
     <body class="is-preload">
 
         <div id="wrapper">
-
-                <header id="header">
-                        <div class="logo">
-                            <span class="icon fa-comments"></span>
+            <header id="header">
+                <div class="logo">
+                    <span class="icon fa-file-pdf"></span>
+                </div>
+                <div class="content">
+                    <div class="inner">
+                        <h1>Document Assistant</h1>
+                        <p id="header-desc">Upload any PDF document and ask questions about its content.</p>
+                        
+                        <div class="upload-section" id="upload-container">
+                            <input type="file" id="pdf-file" accept="application/pdf" style="display: none;" onchange="updateFileName()" />
+                            <label for="pdf-file" class="button" style="cursor: pointer; margin-right: 10px;">Choose PDF</label>
+                            <span id="file-name" style="margin-right: 15px;">No file chosen</span>
+                            
+                            <button onclick="uploadPDF()" id="upload-btn" class="button primary" disabled>Upload & Process</button>
+                            <div id="upload-status"></div>
                         </div>
-                        <div class="content">
-                            <div class="inner">
-                                <h1>Policy Assistant</h1>
-                                <p>Ask any question about our company policies, returns, or refunds.</p>
-                                
-                                <div class="chat-wrapper">
-                                    <div id="chat-box" class="chat-box">
-                                        <div class="message bot-message">
-                                            Hello! I am your Policy Assistant. How can I help you today?
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="input-area">
-                                        <input type="text" id="user-input" placeholder="Type your question..." autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
-                                        <button onclick="sendMessage()" class="send-btn">Send</button>
-                                    </div>
+                        
+                        <div class="chat-wrapper hidden" id="chat-interface">
+                            <div id="chat-box" class="chat-box">
                                 </div>
-                                </div>
+                            
+                            <div class="input-area">
+                                <input type="text" id="user-input" placeholder="Type your question..." autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
+                                <button onclick="sendMessage()" class="send-btn">Send</button>
+                            </div>
                         </div>
-                        <nav>
-                            <ul>
-                                <li><a href="javascript:location.reload()">Reset Chat</a></li>
-                            </ul>
-                        </nav>
-                    </header>
 
-                <div id="main">
                     </div>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="javascript:location.reload()">Start Over</a></li>
+                    </ul>
+                </nav>
+            </header>
 
-                <footer id="footer">
-                        <p class="copyright">&copy; RAG Project. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
-                    </footer>
+            <div id="main"></div>
 
-            </div>
+            <footer id="footer">
+                <p class="copyright">&copy; RAG Project. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+            </footer>
+        </div>
 
         <div id="bg"></div>
 
         <script src="static/assets/js/jquery.min.js"></script>
-            <script src="static/assets/js/browser.min.js"></script>
-            <script src="static/assets/js/breakpoints.min.js"></script>
-            <script src="static/assets/js/util.js"></script>
-            <script src="static/assets/js/main.js"></script>
+        <script src="static/assets/js/browser.min.js"></script>
+        <script src="static/assets/js/breakpoints.min.js"></script>
+        <script src="static/assets/js/util.js"></script>
+        <script src="static/assets/js/main.js"></script>
 
         <script>
-                async function sendMessage() {
-                    const inputField = document.getElementById('user-input');
-                    const chatBox = document.getElementById('chat-box');
-                    const question = inputField.value.trim();
+            // --- File Selection UI ---
+            function updateFileName() {
+                const fileInput = document.getElementById('pdf-file');
+                const fileNameDisplay = document.getElementById('file-name');
+                const uploadBtn = document.getElementById('upload-btn');
+                
+                if (fileInput.files.length > 0) {
+                    fileNameDisplay.textContent = fileInput.files[0].name;
+                    uploadBtn.disabled = false;
+                } else {
+                    fileNameDisplay.textContent = "No file chosen";
+                    uploadBtn.disabled = true;
+                }
+            }
 
-                    if (!question) return;
+            // --- File Upload Logic ---
+            async function uploadPDF() {
+                const fileInput = document.getElementById('pdf-file');
+                const statusDiv = document.getElementById('upload-status');
+                const uploadBtn = document.getElementById('upload-btn');
+                const file = fileInput.files[0];
 
-                    // 1. Add User Message
-                    addMessage(question, 'user-message');
-                    inputField.value = ''; 
+                if (!file) return;
 
-                    // 2. Show "Thinking..."
-                    const loadingId = addMessage('Thinking...', 'bot-message');
+                const formData = new FormData();
+                formData.append("file", file);
 
-                    try {
-                        // 3. Send to FastAPI
-                        const response = await fetch('/api/ask', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ query: question })
-                        });
+                statusDiv.innerText = "⏳ Uploading and processing... This might take a minute.";
+                statusDiv.style.color = "#ffb000";
+                uploadBtn.disabled = true;
+                fileInput.disabled = true;
 
-                        const data = await response.json();
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                        // 4. Remove "Thinking..." and show answer
-                        document.getElementById(loadingId).remove();
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // SUCCESS! Hide the upload box and show the chat box
+                        document.getElementById('upload-container').style.display = 'none';
+                        document.getElementById('header-desc').style.display = 'none';
+                        document.getElementById('chat-interface').classList.remove('hidden');
                         
-                        if (response.ok) {
-                            addMessage(data.answer, 'bot-message');
-                        } else {
-                            addMessage("Error: " + data.detail, 'bot-message');
-                        }
-
-                    } catch (error) {
-                        document.getElementById(loadingId).remove();
-                        addMessage("Could not connect to the server.", 'bot-message');
-                        console.error(error);
+                        // Add the welcoming message
+                        addMessage(`System: Successfully loaded ${file.name}. What would you like to know?`, 'bot-message');
+                    } else {
+                        statusDiv.innerText = "❌ Error: " + data.detail;
+                        statusDiv.style.color = "#ff0000";
+                        uploadBtn.disabled = false;
+                        fileInput.disabled = false;
                     }
+                } catch (error) {
+                    statusDiv.innerText = "❌ Failed to connect to the server.";
+                    statusDiv.style.color = "#ff0000";
+                    uploadBtn.disabled = false;
+                    fileInput.disabled = false;
+                    console.error(error);
                 }
+            }
 
-                function addMessage(text, className) {
-                    const chatBox = document.getElementById('chat-box');
-                    const div = document.createElement('div');
-                    div.className = `message ${className}`;
-                    div.id = 'msg-' + Date.now();
-                    div.innerText = text;
-                    chatBox.appendChild(div);
-                    chatBox.scrollTop = chatBox.scrollHeight; 
-                    return div.id;
+            // --- Chat Logic ---
+            async function sendMessage() {
+                const inputField = document.getElementById('user-input');
+                const question = inputField.value.trim();
+
+                if (!question) return;
+
+                addMessage(question, 'user-message');
+                inputField.value = ''; 
+
+                const loadingId = addMessage('Thinking...', 'bot-message');
+
+                try {
+                    const response = await fetch('/api/ask', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: question })
+                    });
+
+                    const data = await response.json();
+                    document.getElementById(loadingId).remove();
+                    
+                    if (response.ok) {
+                        addMessage(data.answer, 'bot-message');
+                    } else {
+                        addMessage("Error: " + data.detail, 'bot-message');
+                    }
+
+                } catch (error) {
+                    document.getElementById(loadingId).remove();
+                    addMessage("Could not connect to the server.", 'bot-message');
+                    console.error(error);
                 }
-            </script>
+            }
 
+            function addMessage(text, className) {
+                const chatBox = document.getElementById('chat-box');
+                const div = document.createElement('div');
+                div.className = `message ${className}`;
+                div.id = 'msg-' + Date.now();
+                div.innerText = text;
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight; 
+                return div.id;
+            }
+        </script>
     </body>
 </html>

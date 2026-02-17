@@ -1,0 +1,14 @@
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Project specific
+src/uploaded_docs/
+src/chroma_db/
+*.pdf

@@ -10,5 +10,8 @@ python-dotenv
 sentence-transformers
 matplotlib
 seaborn
-
- 
+fastapi
+uvicorn
+python-multipart
+pydantic
+tf-keras
