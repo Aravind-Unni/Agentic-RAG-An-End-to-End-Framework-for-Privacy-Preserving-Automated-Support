@@ -1,4 +1,4 @@
-# PolicyGuard AI: Local RAG for Document Q&A 🛡️
+# PolicyGuard AI: Local Agentic RAG for Document Q&A 🛡️
 
 **PolicyGuard AI** is a privacy-first **Retrieval-Augmented Generation (RAG)** system designed to answer user questions based on specific policy documents (e.g., Return & Refund Policies).
 
