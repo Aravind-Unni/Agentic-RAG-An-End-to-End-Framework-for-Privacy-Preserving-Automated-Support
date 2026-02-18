@@ -1,4 +1,4 @@
-# PolicyGuard AI: Local Agentic RAG for Document Q&A 🛡️
+# PolicyGuard AI: Agentic RAG for Document Q&A 🛡️
 
 **PolicyGuard AI** is a privacy-first **Retrieval-Augmented Generation (RAG)** system designed to answer user questions based on specific policy documents (e.g., Return & Refund Policies).
 
@@ -25,7 +25,7 @@ The pipeline follows an advanced ReAct Agent workflow optimized for local execut
 1.  **Dynamic Ingestion:** A PDF is uploaded via the frontend and loaded using `PyPDFLoader`.
 2.  **Chunking:** Text is split into chunks of 800 characters with a 150-character overlap using `RecursiveCharacterTextSplitter`.
 3.  **Embedding & Storage:** Chunks are converted into vector embeddings using `sentence-transformers/all-MiniLM-L6-v2` and stored in an **In-Memory ChromaDB**.
-4.  **Agentic Routing:** When a user asks a question, the **Llama 3.2** agent analyzes the request.
+4.  **Agentic Routing:** When a user asks a question, the **Llama 3.3** agent analyzes the request.
 5.  **Tool Execution:** The agent autonomously selects a tool:
     * *Is the answer in the policy?* -> Action: `search_policy_document`
     * *Is it a real-world fact or current event?* -> Action: `web_search`
