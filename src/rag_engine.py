@@ -15,7 +15,6 @@ load_dotenv()
 
 COLLECTION_NAME = "dynamic_policies"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-# CHANGED: Update to Groq's Llama 3.3 70B model
 LLM_MODEL_NAME = "llama-3.3-70b-versatile" 
 
 CHUNK_SIZE = 800
