@@ -3,7 +3,8 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
+# REMOVED: from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq # ADDED
 from dotenv import load_dotenv
 from langchain_classic.tools.retriever import create_retriever_tool
 from langchain_classic.agents import create_react_agent, AgentExecutor
@@ -14,7 +15,8 @@ load_dotenv()
 
 COLLECTION_NAME = "dynamic_policies"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MODEL_NAME = "llama3.2"
+# CHANGED: Update to Groq's Llama 3.3 70B model
+LLM_MODEL_NAME = "llama-3.3-70b-versatile" 
 
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 150
@@ -49,8 +51,9 @@ def initialize_rag_pipeline(file_path):
 
     retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
-    print(f"🤖 Connecting to Ollama ({LLM_MODEL_NAME})...")
-    llm = ChatOllama(model=LLM_MODEL_NAME, temperature=0.2, num_predict=512)
+    # CHANGED: Initialize ChatGroq instead of ChatOllama
+    print(f"🤖 Connecting to Groq ({LLM_MODEL_NAME})...")
+    llm = ChatGroq(model=LLM_MODEL_NAME, temperature=0.2, max_retries=2)
 
     print("🛠️ Setting up Agent Tools...")
     
