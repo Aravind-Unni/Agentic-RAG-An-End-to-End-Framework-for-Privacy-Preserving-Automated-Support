@@ -17,8 +17,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 UPLOAD_DIR = "uploaded_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Global variable for the RAG chain
-qa_chain = None
+# Global variable for the compiled LangGraph application
+rag_app = None
 
 # --- Data Models ---
 class QueryRequest(BaseModel):
@@ -34,9 +34,9 @@ async def index():
 @app.post("/api/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """
-    Endpoint to receive a PDF, save it, and build the RAG pipeline.
+    Endpoint to receive a PDF, save it, and build the LangGraph RAG pipeline.
     """
-    global qa_chain
+    global rag_app
     
     # Basic validation
     if not file.filename.lower().endswith('.pdf'):
@@ -49,11 +49,10 @@ async def upload_pdf(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        print(f"📄 Saved {file.filename}. Initializing vector store...")
+        print(f"📄 Saved {file.filename}. Initializing LangGraph workflow...")
         
-        # 2. Build the RAG chain using the newly uploaded file
-        # Note: initialize_rag_pipeline now needs to accept the file path!
-        qa_chain = initialize_rag_pipeline(file_path)
+        # 2. Build the LangGraph app using the newly uploaded file
+        rag_app = initialize_rag_pipeline(file_path)
         
         return {"message": f"Successfully processed {file.filename}. You can now ask questions!"}
         
@@ -61,30 +60,36 @@ async def upload_pdf(file: UploadFile = File(...)):
         print(f"❌ Upload Error: {str(e)}")
         return JSONResponse(status_code=500, content={"detail": f"Failed to process PDF: {str(e)}"})
 
-
 @app.post("/api/ask")
 async def ask_question(request: QueryRequest):
-    if not qa_chain:
+    global rag_app
+    if not rag_app:
         raise HTTPException(status_code=400, detail="Please upload a PDF document first before asking questions.")
     
     try:
         print(f"📝 Received Query: {request.query}")
         
-        # Run the agent
-        response = qa_chain.invoke({"input": request.query})
-        answer = response['output']
+        # --- THE FIX: LangGraph State Dictionary requires the "question" key ---
+        initial_state = {"question": request.query}
         
-        # --- NEW: Extract which tools the agent actually used! ---
+        # Run the LangGraph application. It returns the final state snapshot.
+        final_state = rag_app.invoke(initial_state)
+        
+        # Extract the final answer from the updated state
+        answer = final_state.get("generation", "I couldn't generate an answer based on the current context.")
+        
+        # --- NEW: Extracting sources based on LangGraph State ---
         used_tools = []
-        if "intermediate_steps" in response:
-            for action, observation in response["intermediate_steps"]:
-                # action.tool contains the name of the tool used (e.g., 'web_search')
-                used_tools.append(action.tool) 
-                
-        # Remove duplicates, or provide a fallback if it answered from memory
-        unique_sources = list(set(used_tools)) if used_tools else ["Agent Internal Knowledge"]
-        
-        return {"answer": answer, "sources": unique_sources}
+        # If the state flag for web search was flipped to True, it used Tavily
+        if final_state.get("web_search_required"):
+            used_tools.append("Tavily Web Search")
+        # Otherwise, if there are documents in the state, it used the local PDF
+        elif final_state.get("documents"):
+            used_tools.append("Local PDF Document")
+        else:
+            used_tools.append("Agent Internal Knowledge")
+            
+        return {"answer": answer, "sources": used_tools}
     
     except Exception as e:
         print(f"❌ Error: {str(e)}")

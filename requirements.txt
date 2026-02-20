@@ -8,6 +8,7 @@ langchain-huggingface
 langchain-chroma
 langchain-classic
 langchain-groq
+langgraph
 chromadb
 pypdf
 python-dotenv
